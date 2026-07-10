@@ -7,6 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+//////////////////////
+// ENUMS
+//////////////////////
+
 enum AuthProvider {
   EMAIL
   GOOGLE
@@ -25,21 +29,39 @@ enum SkillSource {
   AI
 }
 
-enum ApplicationStatus {
-  APPLIED
-  INTERVIEW
-  REJECTED
-  OFFER
+enum InternshipStatus {
+  ACTIVE
+  EXPIRED
+  REMOVED
 }
 
+enum InternshipMode {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+//////////////////////
+// USER
+//////////////////////
+
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  passwordHash String?
-  authProvider AuthProvider
-  role         UserRole
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id             String         @id @default(uuid())
+  email          String         @unique
+  passwordHash   String?
+  authProvider   AuthProvider
+  role           UserRole
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   studentProfile StudentProfile?
   resumes        Resume[]
@@ -47,101 +69,210 @@ model User {
   applications   Application[]
 }
 
+//////////////////////
+// STUDENT PROFILE
+//////////////////////
+
 model StudentProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+
+  fullName          String
+  phone             String?
+  university        String
+  degree            String
+
+  graduationYear    Int
+  cgpa              Float?
+
+  currentLocation   String?
+  preferredLocation String?
+
+  linkedinUrl       String?
+  githubUrl         String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+//////////////////////
+// RESUME
+//////////////////////
+
+model Resume {
   id             String   @id @default(uuid())
-  userId         String   @unique
-  fullName       String
-  university     String
-  degree         String
-  graduationYear Int
-  cgpa           Float?
-  linkedinUrl    String?
-  githubUrl      String?
-  createdAt      DateTime @default(now())
+
+  userId         String
+
+  fileName       String
+  fileUrl        String
+
+  extractedText  String?
+
+  parsingStatus  String @default("PENDING")
+
+  uploadedAt     DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Resume {
-  id         String   @id @default(uuid())
-  userId     String
-  fileName   String
-  fileUrl    String
-  uploadedAt DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
+//////////////////////
+// SKILL
+//////////////////////
 
 model Skill {
-  id       String  @id @default(uuid())
-  name     String  @unique
-  category String?
+  id          String @id @default(uuid())
 
-  userSkills       UserSkill[]
-  internshipSkills InternshipSkill[]
+  name        String @unique
+  category    String?
+
+  userSkills        UserSkill[]
+  internshipSkills  InternshipSkill[]
 }
 
-model UserSkill {
-  id              String      @id @default(uuid())
-  userId          String
-  skillId         String
-  confidenceScore Float?
-  source          SkillSource
-  createdAt       DateTime    @default(now())
+//////////////////////
+// USER SKILL
+//////////////////////
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skill Skill @relation(fields: [skillId], references: [id])
+model UserSkill {
+
+  id               String @id @default(uuid())
+
+  userId           String
+  skillId          String
+
+  confidenceScore  Float?
+
+  source           SkillSource
+
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id],onDelete: Cascade)
+
+  skill Skill @relation(fields: [skillId],references: [id])
 
   @@unique([userId, skillId])
 }
 
+//////////////////////
+// COMPANY
+//////////////////////
+
 model Company {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  website   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  id             String @id @default(uuid())
+
+  name           String @unique
+
+  website        String?
+
+  industry       String?
+
+  headquarters   String?
+
+  logoUrl        String?
+
+  about          String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   internships Internship[]
 }
 
-model Internship {
-  id             String   @id @default(uuid())
-  companyId      String
-  title          String
-  description    String
-  location       String
-  applicationUrl String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+//////////////////////
+// INTERNSHIP
+//////////////////////
 
-  company          Company           @relation(fields: [companyId], references: [id])
+model Internship {
+
+  id                   String @id @default(uuid())
+
+  companyId            String
+
+  title                String
+
+  description          String
+
+  eligibility          String?
+
+  stipend              String?
+
+  benefits             String?
+
+  mode                 InternshipMode?
+
+  location             String?
+
+  applicationUrl       String
+
+  applicationDeadline  DateTime?
+
+  sourcePlatform       String?
+
+  sourceUrl            String?
+
+  externalId           String?
+
+  status               InternshipStatus @default(ACTIVE)
+
+  lastScrapedAt        DateTime?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
   internshipSkills InternshipSkill[]
-  applications     Application[]
+
+  applications Application[]
+
+  @@unique([sourcePlatform, externalId])
 }
 
+//////////////////////
+// INTERNSHIP SKILL
+//////////////////////
+
 model InternshipSkill {
-  id           String @id @default(uuid())
-  internshipId String
-  skillId      String
+
+  id             String @id @default(uuid())
+
+  internshipId   String
+
+  skillId        String
 
   internship Internship @relation(fields: [internshipId], references: [id])
-  skill      Skill      @relation(fields: [skillId], references: [id])
+
+  skill Skill @relation(fields: [skillId], references: [id])
 
   @@unique([internshipId, skillId])
 }
 
-model Application {
-  id           String            @id @default(uuid())
-  userId       String
-  internshipId String
-  status       ApplicationStatus @default(APPLIED)
-  appliedAt    DateTime          @default(now())
+//////////////////////
+// APPLICATION
+//////////////////////
 
-  user       User       @relation(fields: [userId], references: [id])
-  internship Internship @relation(fields: [internshipId], references: [id])
+model Application {
+
+  id              String @id @default(uuid())
+
+  userId          String
+
+  internshipId    String
+
+  status          ApplicationStatus @default(APPLIED)
+
+  appliedAt       DateTime @default(now())
+
+  notes           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+ internship Internship @relation(fields: [internshipId], references: [id])
 
   @@unique([userId, internshipId])
 }
