@@ -1,8 +1,8 @@
 export type ScrapedInternship = {
   title: string;
   companyName: string;
-
   description: string;
+
   eligibility?: string;
   stipend?: string;
   benefits?: string;
