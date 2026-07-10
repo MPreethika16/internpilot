@@ -3,28 +3,65 @@ import prisma from "../config/prisma";
 import { ScrapedInternship } from "./types";
 
 export class IngestionService {
-  async ingest(internships: ScrapedInternship[]): Promise<void> {
-    console.log(`Received ${internships.length} internships`);
+      async ingest(internships: ScrapedInternship[]): Promise<void> {
+  console.log(`Received ${internships.length} internships`);
 
-    for (const scraped of internships) {
-      console.log("Before creating company");
-      const company = await this.findOrCreateCompany(
-        scraped.companyName,
-        scraped.companyWebsite
-      );
-      console.log("Company:", company.name);
+  for (const scraped of internships) {
+    const company = await this.findOrCreateCompany(
+      scraped.companyName,
+      scraped.companyWebsite
+    );
 
-      console.log("Before upsert internship");
+    const internship = await this.upsertInternship(
+      scraped,
+      company.id
+    );
 
-      const internship = await this.upsertInternship(scraped, company.id);
-      
-      console.log(
-        `Saved "${internship.title}" for ${company.name}`
-      );
-    }
+    await this.processSkills(
+      internship.id,
+      scraped.skills
+    );
+
+    console.log(`Saved "${internship.title}" for ${company.name}`);
   }
+}
 
-  
+  private async processSkills(
+  internshipId: string,
+  skillNames: string[] = []
+): Promise<void> {
+  for (const rawSkillName of skillNames) {
+    const skillName = rawSkillName.trim();
+
+    if (!skillName) {
+      continue;
+    }
+
+    const skill = await prisma.skill.upsert({
+      where: {
+        name: skillName,
+      },
+      update: {},
+      create: {
+        name: skillName,
+      },
+    });
+
+    await prisma.internshipSkill.upsert({
+      where: {
+        internshipId_skillId: {
+          internshipId,
+          skillId: skill.id,
+        },
+      },
+      update: {},
+      create: {
+        internshipId,
+        skillId: skill.id,
+      },
+    });
+  }
+}
   
   private async findOrCreateCompany(
     companyName: string,
