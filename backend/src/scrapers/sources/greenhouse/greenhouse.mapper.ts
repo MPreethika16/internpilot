@@ -1,7 +1,7 @@
 import type { ScrapedInternship } from "../../types";
 import type { GreenhouseCompanyConfig } from "./greenhouse.config";
 import type { GreenhouseJob } from "./greenhouse.types";
-import { htmlToPlainText } from "../../../utils/html-to-text";
+import {  htmlToText } from "../../../utils/html-to-text";
 
 export function mapGreenhouseJob(
   job: GreenhouseJob,
@@ -34,7 +34,7 @@ export function mapGreenhouseJob(
   return {
     title: job.title.trim(),
     companyName: config.companyName,
-    description: htmlToPlainText(job.content),
+    description:  htmlToText(job.content),
 
     eligibility: undefined,
     stipend: undefined,

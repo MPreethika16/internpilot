@@ -7,7 +7,7 @@ export interface GreenhouseJob {
   title: string;
   company_name?: string;
   absolute_url: string;
-  content?: string;
+  content: string;
 
   location?: GreenhouseLocation;
 

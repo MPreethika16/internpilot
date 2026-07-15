@@ -5,7 +5,9 @@ import { GreenhouseClient } from "./greenhouse.client";
 import type { GreenhouseCompanyConfig } from "./greenhouse.config";
 import { mapGreenhouseJob } from "./greenhouse.mapper";
 
-import { isRelevantInternship } from "../../../services/internship-relevance.service";
+import {
+  evaluateInternshipRelevance,
+} from "../../../services/internship-relevance.service";
 
 export class GreenhouseScraper implements InternshipScraper {
   public readonly sourceName = "GREENHOUSE";
@@ -44,7 +46,23 @@ export class GreenhouseScraper implements InternshipScraper {
     }
 
     const relevantInternships =
-      mappedInternships.filter(isRelevantInternship);
+  mappedInternships.filter((internship) => {
+    const evaluation =
+      evaluateInternshipRelevance(internship);
+
+    if (!evaluation.relevant) {
+      console.log(
+        `[Greenhouse:${this.config.boardToken}] Rejected`,
+        {
+          title: internship.title,
+          location: internship.location,
+          reasons: evaluation.reasons,
+        },
+      );
+    }
+
+    return evaluation.relevant;
+  });
 
     console.log(
       `[Greenhouse:${this.config.boardToken}]`,

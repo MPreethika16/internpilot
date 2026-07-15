@@ -1,33 +1,23 @@
 import { ScraperManager } from "./scraper.manager";
+
 import { GreenhouseScraper } from "./sources/greenhouse/greenhouse.scraper";
 import { greenhouseCompanies } from "./sources/greenhouse/greenhouse.config";
 
-/*
- * Create one Greenhouse scraper for every configured company.
- *
- * Example:
- * greenhouseCompanies = [
- *   {
- *     companyName: "Podium",
- *     boardToken: "podium81",
- *     ...
- *   },
- * ];
- */
+import { YCStartupsScraper } from "./sources/yc-startups/yc-startups.scraper";
+import { ycStartupsConfig } from "./sources/yc-startups/yc-startups.config";
+
+import { playwrightBrowserService } from "../services/browser/playwright-browser.service";
+
 const greenhouseScrapers = greenhouseCompanies.map(
   (config) => new GreenhouseScraper(config),
 );
 
-/*
- * This is the shared ScraperManager instance used by the application.
- *
- * Later, when MicrosoftScraper is ready:
- *
- * const scrapers = [
- *   ...greenhouseScrapers,
- *   microsoftScraper,
- * ];
- */
+const ycStartupsScraper = new YCStartupsScraper(
+  playwrightBrowserService,
+  ycStartupsConfig,
+);
+
 export const scraperManager = new ScraperManager([
   ...greenhouseScrapers,
+  ycStartupsScraper,
 ]);

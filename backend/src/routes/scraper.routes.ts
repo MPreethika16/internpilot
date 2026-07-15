@@ -4,6 +4,7 @@ import { scraperPipelineService } from "../container";
 const router = Router();
 
 router.post("/run", async (_req, res) => {
+  console.log("===== ROUTE HIT =====");
   try {
     await scraperPipelineService.run();
 
@@ -25,3 +26,4 @@ router.post("/run", async (_req, res) => {
 });
 
 export default router;
+

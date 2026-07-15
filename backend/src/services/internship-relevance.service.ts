@@ -1,103 +1,123 @@
 import type { ScrapedInternship } from "../scrapers/types";
 
-const INTERNSHIP_KEYWORDS = [
-  "intern",
-  "internship",
-  "co-op",
-  "coop",
-  "trainee",
-];
+export type RelevanceEvaluation = {
+  relevant: boolean;
+  reasons: string[];
+};
 
-const TECHNICAL_KEYWORDS = [
-  "software",
-  "developer",
-  "engineering",
-  "backend",
-  "frontend",
-  "front end",
-  "full stack",
-  "fullstack",
-  "mobile",
-  "android",
-  "ios",
-  "data",
-  "machine learning",
-  "artificial intelligence",
-  "ai",
-  "ml",
-  "cloud",
-  "devops",
-  "security",
-  "cybersecurity",
-  "qa",
-  "quality assurance",
-];
+export function evaluateInternshipRelevance(
+  internship: ScrapedInternship,
+): RelevanceEvaluation {
+  const reasons: string[] = [];
 
-const ELIGIBLE_LOCATION_KEYWORDS = [
-  "hyderabad",
-  "telangana",
-  "india",
-  "remote india",
-  "india remote",
-  "remote - india",
-];
+  const title = internship.title.trim().toLowerCase();
+  const description = internship.description.trim().toLowerCase();
+  const eligibility =
+    internship.eligibility?.trim().toLowerCase() ?? "";
+  const location =
+    internship.location?.trim().toLowerCase() ?? "";
 
-const RESTRICTED_LOCATION_KEYWORDS = [
-  "us only",
-  "united states only",
-  "canada only",
-  "uk only",
-  "emea only",
-];
+  const searchableRoleText = [
+    title,
+    description,
+    eligibility,
+  ].join(" ");
 
-function includesAny(value: string, keywords: string[]): boolean {
-  const normalizedValue = value.toLowerCase();
+  const internshipKeywords = [
+    "intern",
+    "internship",
+    "co-op",
+    "coop",
+    "student",
+    "graduate",
+  ];
 
-  return keywords.some((keyword) =>
-    normalizedValue.includes(keyword.toLowerCase()),
+  const technicalKeywords = [
+    "software",
+    "developer",
+    "engineering",
+    "engineer",
+    "backend",
+    "frontend",
+    "full stack",
+    "fullstack",
+    "data",
+    "machine learning",
+    "artificial intelligence",
+    "cloud",
+    "devops",
+    "security",
+    "technology",
+    "technical",
+    "product",
+    "qa",
+    "quality assurance",
+  ];
+
+  const hasInternshipKeyword = internshipKeywords.some(
+    (keyword) => searchableRoleText.includes(keyword),
   );
-}
 
-export function isInternship(
-  internship: ScrapedInternship,
-): boolean {
-  return includesAny(internship.title, INTERNSHIP_KEYWORDS);
-}
-
-export function isTechnicalInternship(
-  internship: ScrapedInternship,
-): boolean {
-  const searchableText = [
-    internship.title,
-    internship.description,
-    ...(internship.skills ?? []),
-  ].join(" ");
-
-  return includesAny(searchableText, TECHNICAL_KEYWORDS);
-}
-
-export function isEligibleLocation(
-  internship: ScrapedInternship,
-): boolean {
-  const searchableText = [
-    internship.location ?? "",
-    internship.eligibility ?? "",
-    internship.description,
-  ].join(" ");
-
-  if (includesAny(searchableText, RESTRICTED_LOCATION_KEYWORDS)) {
-    return false;
+  if (!hasInternshipKeyword) {
+    reasons.push("No internship keyword found");
   }
 
-  return includesAny(searchableText, ELIGIBLE_LOCATION_KEYWORDS);
+  const hasTechnicalKeyword = technicalKeywords.some(
+    (keyword) => searchableRoleText.includes(keyword),
+  );
+
+  if (!hasTechnicalKeyword) {
+    reasons.push("No technical-role keyword found");
+  }
+
+  const indiaLocationKeywords = [
+    "india",
+    "hyderabad",
+    "telangana",
+    "bengaluru",
+    "bangalore",
+    "karnataka",
+    "pune",
+    "maharashtra",
+    "chennai",
+    "tamil nadu",
+    "gurugram",
+    "gurgaon",
+    "noida",
+    "delhi",
+    "mumbai",
+  ];
+
+  const isIndiaLocation = indiaLocationKeywords.some(
+    (keyword) => location.includes(keyword),
+  );
+
+  const isIndiaRemote =
+    location.includes("remote") &&
+    location.includes("india");
+
+  const hasEligibleLocation =
+    isIndiaLocation || isIndiaRemote;
+
+  if (!hasEligibleLocation) {
+    reasons.push(
+      `Location is not India-eligible: ${
+        internship.location ?? "missing"
+      }`,
+    );
+  }
+
+  return {
+    relevant:
+      hasInternshipKeyword &&
+      hasTechnicalKeyword &&
+      hasEligibleLocation,
+    reasons,
+  };
 }
 
 export function isRelevantInternship(
   internship: ScrapedInternship,
 ): boolean {
-  return (
-    isInternship(internship) &&
-    isTechnicalInternship(internship) &&
-    isEligibleLocation(internship)
-  );
+  return evaluateInternshipRelevance(internship).relevant;
 }

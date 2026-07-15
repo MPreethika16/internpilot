@@ -1,25 +1,38 @@
 import * as cheerio from "cheerio";
 
-export function htmlToPlainText(value?: string): string {
-  if (!value) {
+export function htmlToText(html: string): string {
+  if (!html.trim()) {
     return "";
   }
 
-  /*
-   * Greenhouse may return entity-encoded HTML:
-   * &lt;p&gt;Hello&lt;/p&gt;
-   *
-   * First parsing pass decodes the entities into HTML.
-   */
-  const decodedHtml = cheerio.load(value).text();
+  const $ = cheerio.load(html);
 
-  /*
-   * Second parsing pass removes the resulting HTML tags.
-   */
-  const plainText = cheerio.load(decodedHtml).text();
+  $("script, style, noscript").remove();
 
-  return plainText
-    .replace(/\u00a0/g, " ")
-    .replace(/\s+/g, " ")
+  $("br").replaceWith("\n");
+
+  $("p, h1, h2, h3, h4, h5, h6, blockquote").each(
+    (_index, element) => {
+      $(element).prepend("\n");
+      $(element).append("\n");
+    },
+  );
+
+  $("li").each((_index, element) => {
+    $(element).prepend("\n- ");
+    $(element).append("\n");
+  });
+
+  $("strong, em, span, a").each((_index, element) => {
+    $(element).prepend(" ");
+    $(element).append(" ");
+  });
+
+  return $.root()
+    .text()
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
