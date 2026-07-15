@@ -211,11 +211,11 @@ model Internship {
 
   applicationDeadline  DateTime?
 
-  sourcePlatform       String?
+  sourcePlatform       String
 
   sourceUrl            String?
 
-  externalId           String?
+  externalId           String
 
   status               InternshipStatus @default(ACTIVE)
 

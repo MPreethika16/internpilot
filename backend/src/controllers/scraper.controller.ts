@@ -1,29 +1,42 @@
-import { Request, Response } from "express";
-import { IngestionService } from "../scrapers/ingestion.service";
-import { MicrosoftScraper } from "../scrapers/sources/microsoft.scraper";
+import type { Request, Response } from "express";
 
-export const testMicrosoftScraper = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+import { ScraperManager } from "../scrapers/scraper.manager";
+import { MicrosoftScraper } from "../scrapers/sources/microsoft/microsoft.scraper";
+import { GreenhouseScraper } from "../scrapers/sources/greenhouse/greenhouse.scraper";
+import { greenhouseCompanies } from "../scrapers/sources/greenhouse/greenhouse.config";
+import { IngestionService } from "../services/ingestion.service";
+
+export async function runScrapers(req: Request, res: Response): Promise<void> {
   try {
-    const scraper = new MicrosoftScraper();
-    const internships = await scraper.scrape();
+    const greenhouseConfig = greenhouseCompanies[0];
+
+    if (!greenhouseConfig) {
+      throw new Error("No Greenhouse company configuration found");
+    }
+
+    const manager = new ScraperManager([
+      new MicrosoftScraper(),
+      new GreenhouseScraper(greenhouseConfig),
+    ]);
+
+    const internships = await manager.scrapeAll();
 
     const ingestionService = new IngestionService();
-    await ingestionService.ingest(internships);
+
+    const result = await ingestionService.ingest(internships);
 
     res.status(200).json({
       success: true,
-      count: internships.length,
-      data: internships,
+      scraped: internships.length,
+      ingestion: result,
     });
   } catch (error) {
-    console.error("Microsoft scraper failed:", error);
+    const message =
+      error instanceof Error ? error.message : "Unknown scraper pipeline error";
 
     res.status(500).json({
       success: false,
-      message: "Failed to scrape Microsoft internships",
+      message,
     });
   }
-};
+}

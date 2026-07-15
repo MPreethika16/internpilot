@@ -1,8 +1,27 @@
 import { Router } from "express";
-import { testMicrosoftScraper } from "../controllers/scraper.controller";
+import { scraperPipelineService } from "../container";
 
 const router = Router();
 
-router.get("/microsoft", testMicrosoftScraper);
+router.post("/run", async (_req, res) => {
+  try {
+    await scraperPipelineService.run();
+
+    res.status(200).json({
+      success: true,
+      message: "Scraper pipeline completed",
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown pipeline error";
+
+    res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+});
 
 export default router;

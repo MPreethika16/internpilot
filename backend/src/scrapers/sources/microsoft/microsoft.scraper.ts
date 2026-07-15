@@ -1,9 +1,8 @@
 import axios, { AxiosError } from "axios";
 import * as cheerio from "cheerio";
 
-import { InternshipScraper } from "../scraper.interface";
-import { ScrapedInternship } from "../types";
-
+import { InternshipScraper } from "../../scraper.interface";
+import { ScrapedInternship } from "../../types";
 /**
  * Summary information returned by Microsoft's search endpoint.
  */

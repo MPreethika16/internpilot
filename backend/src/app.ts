@@ -1,20 +1,34 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
+import express, {
+  type Request,
+  type Response,
+} from "express";
+import cors from "cors";
+
 import scraperRoutes from "./routes/scraper.routes";
+import { startScraperScheduler } from "./cron/scraper.scheduler";
+import { scraperPipelineService } from "./container";
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
 app.use("/api/scraper", scraperRoutes);
-// Routes
-app.get('/health', (req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    message: 'InternPilot backend is running'
-  });
-});
+
+app.get(
+  "/health",
+  (_req: Request, res: Response) => {
+    res.status(200).json({
+      status: "ok",
+      message: "InternPilot backend is running",
+    });
+  },
+);
+
+if (process.env.NODE_ENV !== "test") {
+  startScraperScheduler(
+    () => scraperPipelineService.run(),
+  );
+}
 
 export default app;

@@ -13,7 +13,7 @@ export type ScrapedInternship = {
 
   sourceUrl?: string;
   sourcePlatform: string;
-  externalId?: string;
+  externalId: string;
 
   applicationDeadline?: Date;
 
